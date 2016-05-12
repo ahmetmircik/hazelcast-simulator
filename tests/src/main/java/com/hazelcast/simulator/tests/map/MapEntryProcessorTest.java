@@ -34,6 +34,7 @@ public class MapEntryProcessorTest {
 
     // properties
     public String basename = "index-ep";
+    public String sql;
     public int keyCount = 1000;
     public int rangeStart = 0;
     public int rangeEnd = 100;
@@ -76,8 +77,7 @@ public class MapEntryProcessorTest {
         @Override
         public void timeStep(Probe probe) {
             long started = System.nanoTime();
-            map.executeOnEntries(new NOOP(),
-                    new SqlPredicate("__key > " + rangeStart + " AND __key < " + rangeEnd));
+            map.executeOnEntries(new NOOP(), new SqlPredicate(sql));
             probe.recordValue(System.nanoTime() - started);
         }
 
