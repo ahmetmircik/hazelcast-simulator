@@ -21,7 +21,7 @@ import com.hazelcast.config.SocketInterceptorConfig;
 import com.hazelcast.config.SymmetricEncryptionConfig;
 import com.hazelcast.instance.HazelcastThreadGroup;
 import com.hazelcast.internal.ascii.TextCommandService;
-import com.hazelcast.internal.serialization.SerializationService;
+import com.hazelcast.internal.serialization.InternalSerializationService;
 import com.hazelcast.internal.serialization.impl.DefaultSerializationServiceBuilder;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.LoggingService;
@@ -43,6 +43,7 @@ import com.hazelcast.spi.EventRegistration;
 import com.hazelcast.spi.EventService;
 import com.hazelcast.spi.impl.PacketHandler;
 import com.hazelcast.spi.impl.packetdispatcher.PacketDispatcher;
+import com.hazelcast.spi.serialization.SerializationService;
 
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
@@ -123,10 +124,6 @@ public class MockIOService implements IOService {
     }
 
     @Override
-    public void handleClientPacket(Packet p) {
-    }
-
-    @Override
     public void handleClientMessage(ClientMessage cm, Connection connection) {
     }
 
@@ -192,6 +189,11 @@ public class MockIOService implements IOService {
     @Override
     public int getSocketSendBufferSize() {
         return socketSendBufferSize;
+    }
+
+    @Override
+    public boolean isSocketBufferDirect() {
+        return false;
     }
 
     @Override
@@ -293,8 +295,8 @@ public class MockIOService implements IOService {
     }
 
     @Override
-    public SerializationService getSerializationService() {
-        return serializationService;
+    public InternalSerializationService getSerializationService() {
+        return ((InternalSerializationService) serializationService);
     }
 
     @Override
@@ -315,7 +317,7 @@ public class MockIOService implements IOService {
             @Override
             public void dispatch(Packet packet) {
                 try {
-                    if (packet.isHeaderSet(Packet.HEADER_BIND)) {
+                    if (packet.isFlagSet(Packet.FLAG_BIND)) {
                         connection.getConnectionManager().handle(packet);
                     } else {
                         PacketHandler handler = packetHandler;

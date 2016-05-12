@@ -16,86 +16,54 @@
 package com.hazelcast.simulator.tests.map;
 
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.core.IList;
 import com.hazelcast.core.IMap;
 import com.hazelcast.map.AbstractEntryProcessor;
+import com.hazelcast.query.SqlPredicate;
 import com.hazelcast.simulator.probes.Probe;
 import com.hazelcast.simulator.test.TestContext;
-import com.hazelcast.simulator.test.TestRunner;
 import com.hazelcast.simulator.test.annotations.RunWithWorker;
 import com.hazelcast.simulator.test.annotations.Setup;
 import com.hazelcast.simulator.test.annotations.Teardown;
 import com.hazelcast.simulator.test.annotations.Verify;
 import com.hazelcast.simulator.test.annotations.Warmup;
-import com.hazelcast.simulator.tests.helpers.KeyLocality;
-import com.hazelcast.simulator.tests.helpers.KeyUtils;
 import com.hazelcast.simulator.worker.tasks.AbstractMonotonicWorkerWithProbeControl;
 
 import java.util.Map;
 
-import static com.hazelcast.simulator.utils.CommonUtils.sleepMillis;
-import static org.junit.Assert.assertEquals;
-
 public class MapEntryProcessorTest {
 
     // properties
-    public String basename = MapEntryProcessorTest.class.getSimpleName();
+    public String basename = "index-ep";
     public int keyCount = 1000;
-    public int minProcessorDelayMs = 0;
-    public int maxProcessorDelayMs = 0;
-    public KeyLocality keyLocality = KeyLocality.SHARED;
+    public int rangeStart = 0;
+    public int rangeEnd = 100;
 
-    private IMap<Integer, Long> map;
-    private IList<long[]> resultsPerWorker;
-    private int[] keys;
+    private IMap<Integer, Integer> map;
 
     @Setup
     public void setUp(TestContext testContext) {
-        if (minProcessorDelayMs > maxProcessorDelayMs) {
-            throw new IllegalArgumentException("minProcessorDelayMs has to be >= maxProcessorDelayMs. "
-                    + "Current settings: minProcessorDelayMs = " + minProcessorDelayMs
-                    + " maxProcessorDelayMs = " + maxProcessorDelayMs);
-        }
-
         HazelcastInstance targetInstance = testContext.getTargetInstance();
         map = targetInstance.getMap(basename);
-        resultsPerWorker = targetInstance.getList(basename + ":ResultMap");
-        keys = KeyUtils.generateIntKeys(keyCount, keyLocality, targetInstance);
     }
 
     @Teardown
     public void tearDown() {
         map.destroy();
-        resultsPerWorker.destroy();
     }
 
     @Warmup(global = true)
     public void warmup() {
+        if (basename.indexOf("index") != -1) {
+            map.addIndex("__key", true);
+        }
+
         for (int i = 0; i < keyCount; i++) {
-            map.put(i, 0L);
+            map.put(i, i);
         }
     }
 
     @Verify
     public void verify() {
-        long[] expectedValueForKey = new long[keyCount];
-
-        for (long[] incrementsAtKey : resultsPerWorker) {
-            for (int i = 0; i < incrementsAtKey.length; i++) {
-                expectedValueForKey[i] += incrementsAtKey[i];
-            }
-        }
-
-        int failures = 0;
-        for (int i = 0; i < keyCount; i++) {
-            long expected = expectedValueForKey[i];
-            long found = map.get(i);
-            if (expected != found) {
-                failures++;
-            }
-        }
-
-        assertEquals(0, failures);
     }
 
     @RunWithWorker
@@ -104,59 +72,39 @@ public class MapEntryProcessorTest {
     }
 
     private class Worker extends AbstractMonotonicWorkerWithProbeControl {
-        private final long[] localIncrementsAtKey = new long[keyCount];
 
         @Override
         public void timeStep(Probe probe) {
-            int key = keys[randomInt(keys.length)];
-
-            long increment = randomInt(100);
-            int delayMs = calculateDelay();
-
             long started = System.nanoTime();
-            map.executeOnKey(key, new IncrementEntryProcessor(increment, delayMs));
+            map.executeOnEntries(new NOOP(),
+                    new SqlPredicate("__key > " + rangeStart + " AND __key < " + rangeEnd));
             probe.recordValue(System.nanoTime() - started);
-
-            localIncrementsAtKey[key] += increment;
         }
 
         @Override
         protected void afterRun() {
-            // sleep to give time for the last EntryProcessor tasks to complete
-            sleepMillis(maxProcessorDelayMs * 2);
-            resultsPerWorker.add(localIncrementsAtKey);
         }
 
-        private int calculateDelay() {
-            int delayMs = 0;
-            if (minProcessorDelayMs >= 0 && maxProcessorDelayMs > 0) {
-                delayMs = minProcessorDelayMs + randomInt(1 + maxProcessorDelayMs - minProcessorDelayMs);
-            }
-            return delayMs;
-        }
     }
 
-    private static final class IncrementEntryProcessor extends AbstractEntryProcessor<Integer, Long> {
+    private static final class NOOP extends AbstractEntryProcessor<Integer, Long> {
 
-        private final long increment;
-        private final int delayMs;
 
-        private IncrementEntryProcessor(long increment, int delayMs) {
-            this.increment = increment;
-            this.delayMs = delayMs;
+        private NOOP() {
         }
 
         @Override
         public Object process(Map.Entry<Integer, Long> entry) {
-            sleepMillis(delayMs);
-            long newValue = entry.getValue() + increment;
-            entry.setValue(newValue);
-            return null;
+            return Boolean.TRUE;
         }
     }
 
     public static void main(String[] args) throws Exception {
-        MapEntryProcessorTest test = new MapEntryProcessorTest();
-        new TestRunner<MapEntryProcessorTest>(test).run();
+
+
+        String t = "index-ep";
+
+        int index = t.indexOf("index");
+        System.out.println("index = " + index);
     }
 }

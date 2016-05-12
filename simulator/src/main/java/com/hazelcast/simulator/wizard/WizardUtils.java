@@ -58,7 +58,12 @@ final class WizardUtils {
         if (profileFile.isFile()) {
             return profileFile;
         }
-        throw new CommandLineExitException("Could not find .bashrc or .profile file! Installation not supported on this system!");
+        File zshrcFile = new File(homeDir, ".zshrc");
+        if (zshrcFile.isFile()) {
+            return zshrcFile;
+        }
+
+        throw new CommandLineExitException("Could not find .bashrc or .profile or .zshrc file! Installation not supported on this system!");
     }
 
     static Properties getUserProperties() {

@@ -65,6 +65,16 @@ public class WizardUtilsTest {
     }
 
     @Test
+    public void testGetProfileFile_withZshrc() {
+        File expectedFile = new File(parent, ".zshrc");
+        writeText("# empty file", expectedFile);
+
+        File actualFile = getProfileFile(parent.getPath());
+
+        assertEquals(expectedFile.getPath(), actualFile.getPath());
+    }
+
+    @Test
     public void testGetProfileFile_withProfile() {
         File expectedFile = new File(parent, ".profile");
         writeText("# empty file", expectedFile);

@@ -15,7 +15,6 @@
  */
 package com.hazelcast.simulator.tests.synthetic;
 
-import com.hazelcast.client.impl.client.PartitionClientRequest;
 import com.hazelcast.nio.serialization.PortableReader;
 import com.hazelcast.nio.serialization.PortableWriter;
 import com.hazelcast.spi.Operation;
@@ -44,7 +43,7 @@ public class SyntheticRequest extends PartitionClientRequest {
     }
 
     @Override
-    protected Operation prepareOperation() {
+    public Operation prepareOperation() {
         SyntheticOperation operation = new SyntheticOperation((byte) syncBackupCount, (byte) asyncBackupCount, backupDelayNanos);
         operation.setPartitionId(partitionId);
 
@@ -52,7 +51,7 @@ public class SyntheticRequest extends PartitionClientRequest {
     }
 
     @Override
-    protected int getPartition() {
+    public int getPartition() {
         return partitionId;
     }
 
@@ -69,6 +68,16 @@ public class SyntheticRequest extends PartitionClientRequest {
     @Override
     public int getClassId() {
         return 1;
+    }
+
+    @Override
+    public void writePortable(PortableWriter portableWriter) throws IOException {
+
+    }
+
+    @Override
+    public void readPortable(PortableReader portableReader) throws IOException {
+
     }
 
     @Override
