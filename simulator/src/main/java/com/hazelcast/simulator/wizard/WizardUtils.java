@@ -50,6 +50,10 @@ final class WizardUtils {
     }
 
     static File getProfileFile(String homeDir) {
+        File zshFile = new File(homeDir, ".zshrc");
+        if (zshFile.isFile()) {
+            return zshFile;
+        }
         File bashrcFile = new File(homeDir, ".bashrc");
         if (bashrcFile.isFile()) {
             return bashrcFile;
@@ -58,7 +62,8 @@ final class WizardUtils {
         if (profileFile.isFile()) {
             return profileFile;
         }
-        throw new CommandLineExitException("Could not find .bashrc or .profile file!"
+
+        throw new CommandLineExitException("Could not find one of .zshrc, .bashrc or .profile files!"
                 + " Installation not supported on this system!");
     }
 
