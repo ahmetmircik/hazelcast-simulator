@@ -74,7 +74,7 @@ final class WizardCli {
         OptionSet options = initOptionsWithHelp(cli.parser, args);
 
         if (options.has(cli.installSpec)) {
-            String homeDir = System.getProperty("user.dir");
+            String homeDir = System.getProperty("user.home");
             wizard.install(getSimulatorPath(), getProfileFile(homeDir));
         } else if (options.has(cli.createWorkDirSpec)) {
             SimulatorProperties simulatorProperties = getSimulatorProperties(false);

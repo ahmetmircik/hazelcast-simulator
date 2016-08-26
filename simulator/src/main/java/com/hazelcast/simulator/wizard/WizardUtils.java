@@ -49,22 +49,24 @@ final class WizardUtils {
         execute(format("chmod u+x %s", runScript.getAbsolutePath()));
     }
 
-    static File getProfileFile(String homeDir) {
-        File zshFile = new File(homeDir, ".zshrc");
+    static File getProfileFile(String directory) {
+        File zshFile = new File(directory, ".zshrc");
         if (zshFile.isFile()) {
             return zshFile;
         }
-        File bashrcFile = new File(homeDir, ".bashrc");
+
+        File bashrcFile = new File(directory, ".bashrc");
         if (bashrcFile.isFile()) {
             return bashrcFile;
         }
-        File profileFile = new File(homeDir, ".profile");
+
+        File profileFile = new File(directory, ".profile");
         if (profileFile.isFile()) {
             return profileFile;
         }
 
-        throw new CommandLineExitException("Could not find one of .zshrc, .bashrc or .profile files!"
-                + " under homeDir=" + homeDir
+        throw new CommandLineExitException("Could not find one of .zshrc, .bashrc or .profile files"
+                + " under directory=" + directory
                 + " Installation not supported on this system!");
     }
 
