@@ -64,6 +64,7 @@ final class WizardUtils {
         }
 
         throw new CommandLineExitException("Could not find one of .zshrc, .bashrc or .profile files!"
+                + " under homeDir=" + homeDir
                 + " Installation not supported on this system!");
     }
 
@@ -108,7 +109,7 @@ final class WizardUtils {
 
     /**
      * Compute the absolute file path to the JAR file.
-     *
+     * <p>
      * Found in http://stackoverflow.com/a/20953376
      * The framework is based on http://stackoverflow.com/a/12733172/1614775
      * But that gets it right for only one of the four cases.
