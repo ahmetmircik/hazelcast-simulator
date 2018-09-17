@@ -25,7 +25,9 @@ import com.hazelcast.simulator.tests.helpers.KeyLocality;
 import com.hazelcast.simulator.worker.loadsupport.Streamer;
 import com.hazelcast.simulator.worker.loadsupport.StreamerFactory;
 
+import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 
 import static com.hazelcast.simulator.tests.helpers.HazelcastTestUtils.waitClusterSize;
 import static com.hazelcast.simulator.tests.helpers.KeyUtils.generateIntKeys;
@@ -57,6 +59,18 @@ public class IntIntMapTest extends HazelcastTest {
             streamer.pushEntry(key, value);
         }
         streamer.await();
+    }
+
+    @TimeStep(prob = 0.1)
+    public Integer keySet(ThreadState state) {
+        Set<Integer> keySet = map.keySet();
+        return keySet.size();
+    }
+
+    @TimeStep(prob = 0.1)
+    public Integer entrySet(ThreadState state) {
+        Set<Map.Entry<Integer, Integer>> entrySet = map.entrySet();
+        return entrySet.size();
     }
 
     @TimeStep(prob = 0.1)
