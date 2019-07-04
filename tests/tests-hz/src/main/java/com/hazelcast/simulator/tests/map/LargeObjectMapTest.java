@@ -28,27 +28,27 @@ import com.hazelcast.simulator.worker.loadsupport.StreamerFactory;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Random;
 import java.util.Set;
 
 import static com.hazelcast.simulator.tests.helpers.HazelcastTestUtils.waitClusterSize;
 import static com.hazelcast.simulator.tests.helpers.KeyUtils.generateIntKeys;
 
-public class IntIntMapTest extends HazelcastTest {
+public class LargeObjectMapTest extends HazelcastTest {
 
     // properties
     public int keyCount = 10000;
     public int getAllKeyCount = 1000;
     public int putAllKeyCount = 1000;
     public int hotKeyCount = 100;
+    public int objLength = 1024;
     public KeyLocality keyLocality = KeyLocality.SHARED;
     public int minNumberOfMembers = 0;
 
-    private IMap<Integer, Integer> map;
+    private IMap<Integer, LargeObject> map;
     private int[] keys;
 
     private static final Set<Integer> KEY_SET = new HashSet<Integer>();
-    private static final Map<Integer, Integer> ENTRY_SET = new HashMap<Integer, Integer>();
+    private static final Map<Integer, LargeObject> ENTRY_SET = new HashMap<Integer, LargeObject>();
 
     @Setup
     public void setUp() {
@@ -62,38 +62,16 @@ public class IntIntMapTest extends HazelcastTest {
         }
 
         for (int i = 0; i < putAllKeyCount; i++) {
-            ENTRY_SET.put(i, i);
+            ENTRY_SET.put(i, new LargeObject(objLength));
         }
 
         waitClusterSize(logger, targetInstance, minNumberOfMembers);
         keys = generateIntKeys(keyCount, keyLocality, targetInstance);
-        Streamer<Integer, Integer> streamer = StreamerFactory.getInstance(map);
-        Random random = new Random();
+        Streamer<Integer, LargeObject> streamer = StreamerFactory.getInstance(map);
         for (int key : keys) {
-            int value = random.nextInt(Integer.MAX_VALUE);
-            streamer.pushEntry(key, value);
+            streamer.pushEntry(key, new LargeObject(objLength));
         }
         streamer.await();
-    }
-
-    @TimeStep(prob = 0)
-    public Integer put(ThreadState state) {
-        int key = state.randomKey();
-        int value = state.randomValue();
-        return map.put(key, value);
-    }
-
-    @TimeStep(prob = 0)
-    public void set(ThreadState state) {
-        int key = state.randomKey();
-        int value = state.randomValue();
-        map.set(key, value);
-    }
-
-    @TimeStep(prob = -1)
-    public Integer get(ThreadState state) {
-        int key = state.randomKey();
-        return map.get(key);
     }
 
     @TimeStep(prob = -1)
@@ -104,12 +82,6 @@ public class IntIntMapTest extends HazelcastTest {
     @TimeStep(prob = -1)
     public void putAll(ThreadState state) {
         map.putAll(ENTRY_SET);
-    }
-
-    @TimeStep(prob = 0)
-    public Integer hotGet(ThreadState state) {
-        int key = state.randomHotKey();
-        return map.get(key);
     }
 
     public class ThreadState extends BaseThreadState {
